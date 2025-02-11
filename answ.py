@@ -61,7 +61,7 @@ def api_use(text):
     ]
  }
  headers = {
-    "Authorization": "Bearer sk-knaharxyaaloysxfdndezpdyluzywxhrkalqcjvjdyamgwup",#此处是apikey
+    "Authorization": "Bearer <api_key>",#此处是apikey
     "Content-Type": "application/json"
 }
 

@@ -7,14 +7,17 @@ import time
 # 请替换为你自己的 OpenAI API KEY
 openai.api_key = ""
 
+
 # 加载并拼接章节内容
 def load_json_file(filepath: str):
     with open(filepath, 'r', encoding='utf-8') as f:
         return json.load(f)
 
+
 def merge_text_from_chunks(chapter_data):
     texts = [item['text'] for item in chapter_data]
     return "\n".join(texts)
+
 
 # 生成文本总结
 def summarize_text(story_background: str) -> str:
@@ -39,6 +42,7 @@ def summarize_text(story_background: str) -> str:
     except Exception as e:
         print(f"Error generating summary: {e}")
         return story_background  # In case of error, return the original text
+
 
 # 生成视频提示词
 def generate_video_prompt(summary: str) -> str:
@@ -72,6 +76,7 @@ def generate_video_prompt(summary: str) -> str:
         print(f"Error generating video prompt: {e}")
         return ""  # Return empty string in case of error
 
+
 # 调用视频生成接口
 def generate_video(prompt: str):
     url = "https://api.siliconflow.cn/v1/video/submit"
@@ -80,7 +85,7 @@ def generate_video(prompt: str):
         "prompt": prompt
     }
     headers = {
-        "Authorization": "",  # 替换为你的实际 API 密钥
+        "Authorization": "Bearer sk-vkgmcrkvldamhenfivsukhxkdlceiyonzhcnntnjjqfqsnkd",  # 替换为你的实际 API 密钥
         "Content-Type": "application/json"
     }
 
@@ -95,12 +100,13 @@ def generate_video(prompt: str):
         print(f"Error generating video: {e}")
         return None
 
+
 # 查询视频状态并获取视频链接
 def get_video_status(request_id: str):
     url = "https://api.siliconflow.cn/v1/video/status"
     payload = {"requestId": request_id}
     headers = {
-        "Authorization": "",  # 替换为你的实际 API 密钥
+        "Authorization": "Bearer sk-vkgmcrkvldamhenfivsukhxkdlceiyonzhcnntnjjqfqsnkd",  # 替换为你的实际 API 密钥
         "Content-Type": "application/json"
     }
 
@@ -109,17 +115,23 @@ def get_video_status(request_id: str):
         response.raise_for_status()  # 检查请求是否成功
         response_data = response.json()
 
-        # 如果视频生成成功，返回视频链接
-        if response_data.get("status") == "Succeed":
+        status = response_data.get("status")
+
+        if status == "Succeed":
             video_url = response_data["results"]["videos"][0]["url"]
             print("Video URL:", video_url)
             return video_url
-        else:
-            print(f"Video generation failed. Reason: {response_data.get('reason')}")
+        elif status == "InQueue":
+            print(f"Video is still in queue, position: {response_data.get('position')}. Retrying...")
             return None
+        else:
+            print(f"Error: {status}, Reason: {response_data.get('reason')}")
+            return None
+
     except Exception as e:
         print(f"Error checking video status: {e}")
         return None
+
 
 # 下载视频并保存
 def download_video(video_url: str, save_path: str):
@@ -135,6 +147,7 @@ def download_video(video_url: str, save_path: str):
     except Exception as e:
         print(f"Error downloading video: {e}")
 
+
 # 轮询查询视频状态，直到视频生成成功
 def poll_for_video(request_id: str, save_path: str):
     """
@@ -146,12 +159,12 @@ def poll_for_video(request_id: str, save_path: str):
             download_video(video_url, save_path)
             break
         else:
-            print("Video not ready, retrying...")
             time.sleep(30)  # 等待 30 秒后再次查询
+
 
 def main():
     # 设定总结 JSON 文件存放目录和输出的剧本文件目录
-    novel_file = "./novel/chapter_44.json"  # 从 ./novel 加载章节数据
+    novel_file = "./novel/chapter_1.json"  # 从 ./novel 加载章节数据
     chapter_data = load_json_file(novel_file)
     story_background = merge_text_from_chunks(chapter_data)  # 拼接所有chunk的文本
 
@@ -171,6 +184,7 @@ def main():
             save_path = './Librian_win64_2011/Librian面板/project/黑风岭/我的視頻/generated_video.mp4'
             # 轮询查询视频状态并下载视频
             poll_for_video(request_id, save_path)
+
 
 if __name__ == "__main__":
     main()
